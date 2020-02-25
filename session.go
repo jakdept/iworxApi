@@ -1,24 +1,32 @@
 package iworx
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/kolo/xmlrpc"
 	"github.com/tiaguinho/gosoap"
 	"golang.org/x/crypto/ssh"
 )
 
 type NodeWorxAPI struct {
-	hostname string
-	session  string
-	client   *gosoap.Client
-	setup    bool
+	auth map[string]string
+	client  *xmlrpc.Client
 }
 
-// TODO figure out how to standardize ssh.Session and exec.Command
+// auth object may be:
+//     map[string]string{"sessionid": "sessid"}
+//     map[string]string{"apikey":"key"}
+//     map[string]string{"email":"username@domain.com", "password":"hunter2"}
+// For SiteWorx for all three options add another "domain" key
+
+
+const NodeWorxAPIRoute = "iworx.route"
 
 func (a *NodeWorxAPI) AuthViaInsecureSSHKeyfile(
 	hostname, username, keyFile string, port int) error {
@@ -74,14 +82,23 @@ func SSHKeyfileInsecureRemote(username, keyFile string) (ssh.ClientConfig, error
 }
 
 func NewNodeWorxAPI(hostname string) (*NodeWorxAPI, error) {
-	newClient, err := gosoap.SoapClient("https://" + hostname + ":2443/soap?wsdl")
+	client, err := xmlrpc.NewClient(fmt.Sprintf("https://%s:2443/xmlrpc", hostname),
+		&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, //nolint
+			},
+		},
+	)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
-	return &NodeWorxAPI{
-		hostname: hostname,
-		client:   newClient,
-	}, nil
+	return &NodeWorxAPI{client: client}, nil
+}
+
+func (a *NodeWorxApi) DefaultRequestParams() (map[string]interface{}, error) {
+	if len(a.auth) == 0 {
+		return errors.New("API not authenticated")
+	}
 }
 
 func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
@@ -96,18 +113,15 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
 	// $client = new Zend_XmlRpc_Client( 'https://license-api.interworx.com:2443/xmlrpc' );
 	// $result = $client->call( 'iworx.route', $params );
 
-	params := gosoap.Params{
-		"apikey": gosoap.Params{
-			"sessionid": session,
-		},
-		"ctrl_name": "Index",
-		"action":    "ssoCommit",
-		"input": map[string]string{
-			"sid": session,
-		},
+	params := map[string]interface{
+ "apikey" : $key,
+"ctrl_name" : $api_controller,
+"action"    : $action,
+"input"     : $input
 	}
 
-	resp, err := a.client.Call("Index", params)
+	resp, err := a.client.Call("/nodeworx/overview", params)
+	listVersion
 	if err != nil {
 		return err
 	}
