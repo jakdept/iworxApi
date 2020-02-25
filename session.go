@@ -74,7 +74,7 @@ func (a *NodeWorxAPI) Call(
 	return err
 }
 
-func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
+func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string, domain string) {
 	// $key = array( 'sessionid' => '3c8ae9d982edd507428d8fdd53855a77' );
 	// $input = array();
 	// $params = array( 'apikey'    => $key,
@@ -89,13 +89,16 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
 	a.defaultReqParams.Auth = map[string]string{
 		"sessionid": session,
 	}
+	if domain != "" {
+		a.defaultReqParams.Auth["domain"] = domain
+	}
 }
 
 func (a *NodeWorxAPI) NodeWorxVersion() (string, error) {
 	output := struct {
 		Version string `xml:"version"`
 	}{}
-	err := a.Call("nodeworx.overview", "listVersion", map[string]string{}, output)
+	err := a.Call("nodeworx.overview", "listVersion", nil, output)
 	return output.Version, err
 }
 
@@ -124,7 +127,7 @@ func (a *NodeWorxAPI) AuthViaInsecureSSHKeyfile(
 		return err
 	}
 
-	a.NodeWorxSessionAuthenticate(strings.TrimSpace(string(output)))
+	a.NodeWorxSessionAuthenticate(strings.TrimSpace(string(output)), "")
 	return nil
 }
 
