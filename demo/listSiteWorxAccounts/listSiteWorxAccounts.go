@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/alecthomas/kingpin"
@@ -17,13 +18,16 @@ func main() {
 
 	api, err := iworx.NewNodeWorxAPI(*host)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln(fmt.Errorf("problem creating API: %s", err))
 	}
 
+	log.Println("authenticating")
 	err = api.AuthViaInsecureSSHKeyfile(*host, *username, *keyfile, *port)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln(fmt.Errorf("problem authenticating: %s", err))
 	}
+
+	log.Println("i'm here")
 
 	// accounts, err := api.ListAccounts()
 	// if err != nil {

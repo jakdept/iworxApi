@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/tiaguinho/gosoap"
 	"golang.org/x/crypto/ssh"
 )
@@ -21,7 +21,7 @@ type NodeWorxAPI struct {
 // TODO figure out how to standardize ssh.Session and exec.Command
 
 func (a *NodeWorxAPI) AuthViaInsecureSSHKeyfile(
-	username, keyFile, hostname string, port int) error {
+	hostname, username, keyFile string, port int) error {
 	creds, err := SSHKeyfileInsecureRemote(username, keyFile)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func SSHKeyfileInsecureRemote(username, keyFile string) (ssh.ClientConfig, error
 }
 
 func NewNodeWorxAPI(hostname string) (*NodeWorxAPI, error) {
-	newClient, err := gosoap.SoapClient(hostname)
+	newClient, err := gosoap.SoapClient("https://" + hostname + ":2443/soap?wsdl")
 	if err != nil {
 		return nil, nil
 	}
@@ -111,13 +111,9 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
 	if err != nil {
 		return err
 	}
-	os.Stdout.Write([]byte("\n\n"))
-	os.Stdout.Write(resp.Header)
-	os.Stdout.Write([]byte("\n\n"))
-	os.Stdout.Write(resp.Body)
-	os.Stdout.Write([]byte("\n\n"))
-	os.Stdout.Write(resp.Payload)
-	os.Stdout.Write([]byte("\n\n"))
+	spew.Dump(resp.Header)
+	spew.Dump(resp.Body)
+	spew.Dump(resp.Payload)
 
 	return nil
 }
