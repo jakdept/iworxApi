@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>iworx.route</methodName>
+  <params>
+    <param>
+      <value><struct>
+        <member>
+          <name>apikey</name>
+          <value><struct><member>
+            <name>sessionid</name>
+            <value><string>sessionkey</string></value>
+          </member></struct></value>
+        </member><member>
+          <name>ctrl_name</name>
+          <value><string>nodeworx.overview</string></value>
+        </member><member>
+          <name>action</name>
+          <value><string>listVersion</string></value>
+        </member><member>
+          <name>input</name>
+          <value/>
+        </member>
+      </struct></value>
+    </param>
+  </params>
+</methodCall>

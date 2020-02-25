@@ -19,10 +19,10 @@ type NodeWorxAPI struct {
 }
 
 type NodeWorxReqParams struct {
-	Auth       map[string]string `xml:"apikey"`
-	Controller string            `xml:"ctrl_name"`
-	Action     string            `xml:"action"`
-	Input      interface{}       `xml:"input"`
+	Auth       map[string]string `xmlrpc:"apikey"`
+	Controller string            `xmlrpc:"ctrl_name"`
+	Action     string            `xmlrpc:"action"`
+	Input      interface{}       `xmlrpc:"input"`
 }
 
 // auth object may be:
@@ -64,11 +64,14 @@ func (a *NodeWorxAPI) Call(
 	params.Input = input
 
 	var outputObject = struct {
-		Status      int         `xml:"status"`
-		RespPayload interface{} `xml:"payload"`
+		Status      int         `xmlrpc:"status"`
+		RespPayload interface{} `xmlrpc:"payload"`
 	}{
 		RespPayload: output,
 	}
+
+	reqBody, _ := xmlrpc.EncodeMethodCall(NodeWorxAPIRoute, params)
+	fmt.Println(string(reqBody))
 
 	err := a.client.Call(NodeWorxAPIRoute, params, outputObject)
 	return err
@@ -96,8 +99,9 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string, domain string)
 
 func (a *NodeWorxAPI) NodeWorxVersion() (string, error) {
 	output := struct {
-		Version string `xml:"version"`
+		Version string `xmlrpc:"version"`
 	}{}
+
 	err := a.Call("nodeworx.overview", "listVersion", nil, output)
 	return output.Version, err
 }
