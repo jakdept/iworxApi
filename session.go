@@ -2,6 +2,7 @@ package iworx
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -10,13 +11,19 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/kolo/xmlrpc"
-	"github.com/tiaguinho/gosoap"
 	"golang.org/x/crypto/ssh"
 )
 
 type NodeWorxAPI struct {
-	auth map[string]string
-	client  *xmlrpc.Client
+	defaultReqParams NodeWorxReqParams
+	client           *xmlrpc.Client
+}
+
+type NodeWorxReqParams struct {
+	Auth       map[string]string      `xml:"apikey"`
+	Controller string                 `xml:"ctrl_name"`
+	Action     string                 `xml:"action"`
+	Params     map[string]interface{} `xml:"input"`
 }
 
 // auth object may be:
@@ -25,8 +32,56 @@ type NodeWorxAPI struct {
 //     map[string]string{"email":"username@domain.com", "password":"hunter2"}
 // For SiteWorx for all three options add another "domain" key
 
-
 const NodeWorxAPIRoute = "iworx.route"
+
+func NewNodeWorxAPI(hostname string) (*NodeWorxAPI, error) {
+	client, err := xmlrpc.NewClient(fmt.Sprintf("https://%s:2443/xmlrpc", hostname),
+		&http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, //nolint
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &NodeWorxAPI{client: client}, nil
+}
+
+func (a *NodeWorxAPI) DefaultRequestParams() (NodeWorxReqParams, error) {
+	if len(a.defaultReqParams.Auth) == 0 {
+		return NodeWorxReqParams{}, errors.New("API not authenticated")
+	}
+	return a.defaultReqParams, nil
+}
+
+func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
+	// $key = array( 'sessionid' => '3c8ae9d982edd507428d8fdd53855a77' );
+	// $input = array();
+	// $params = array( 'apikey'    => $key,
+	//                  'ctrl_name' => $api_controller,
+	//                  'action'    => $action,
+	//                  'input'     => $input );
+	// // You can connect using XMLRPC, like this:
+	// // NOTE: This example makes use of the Zend Framework's XMLRPC library.
+	// $client = new Zend_XmlRpc_Client( 'https://license-api.interworx.com:2443/xmlrpc' );
+	// $result = $client->call( 'iworx.route', $params );
+
+	a.defaultReqParams.Auth = map[string]string{
+		"sessionid": session,
+	}
+
+	params, _ := a.DefaultRequestParams()
+	var resp interface{}
+
+	err := a.client.Call(NodeWorxAPIRoute, params, &resp)
+	if err != nil {
+		return err
+	}
+	spew.Dump(resp)
+
+	return nil
+}
 
 func (a *NodeWorxAPI) AuthViaInsecureSSHKeyfile(
 	hostname, username, keyFile string, port int) error {
@@ -79,57 +134,6 @@ func SSHKeyfileInsecureRemote(username, keyFile string) (ssh.ClientConfig, error
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // nolint
 	}, nil
-}
-
-func NewNodeWorxAPI(hostname string) (*NodeWorxAPI, error) {
-	client, err := xmlrpc.NewClient(fmt.Sprintf("https://%s:2443/xmlrpc", hostname),
-		&http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, //nolint
-			},
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &NodeWorxAPI{client: client}, nil
-}
-
-func (a *NodeWorxApi) DefaultRequestParams() (map[string]interface{}, error) {
-	if len(a.auth) == 0 {
-		return errors.New("API not authenticated")
-	}
-}
-
-func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
-	// $key = array( 'sessionid' => '3c8ae9d982edd507428d8fdd53855a77' );
-	// $input = array();
-	// $params = array( 'apikey'    => $key,
-	//                  'ctrl_name' => $api_controller,
-	//                  'action'    => $action,
-	//                  'input'     => $input );
-	// // You can connect using XMLRPC, like this:
-	// // NOTE: This example makes use of the Zend Framework's XMLRPC library.
-	// $client = new Zend_XmlRpc_Client( 'https://license-api.interworx.com:2443/xmlrpc' );
-	// $result = $client->call( 'iworx.route', $params );
-
-	params := map[string]interface{
- "apikey" : $key,
-"ctrl_name" : $api_controller,
-"action"    : $action,
-"input"     : $input
-	}
-
-	resp, err := a.client.Call("/nodeworx/overview", params)
-	listVersion
-	if err != nil {
-		return err
-	}
-	spew.Dump(resp.Header)
-	spew.Dump(resp.Body)
-	spew.Dump(resp.Payload)
-
-	return nil
 }
 
 // Account represents a SiteWorx account
