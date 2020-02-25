@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kolo/xmlrpc"
 	"golang.org/x/crypto/ssh"
 )
@@ -20,10 +19,10 @@ type NodeWorxAPI struct {
 }
 
 type NodeWorxReqParams struct {
-	Auth       map[string]string      `xml:"apikey"`
-	Controller string                 `xml:"ctrl_name"`
-	Action     string                 `xml:"action"`
-	Params     map[string]interface{} `xml:"input"`
+	Auth       map[string]string `xml:"apikey"`
+	Controller string            `xml:"ctrl_name"`
+	Action     string            `xml:"action"`
+	Input      interface{}       `xml:"input"`
 }
 
 // auth object may be:
@@ -48,11 +47,31 @@ func NewNodeWorxAPI(hostname string) (*NodeWorxAPI, error) {
 	return &NodeWorxAPI{client: client}, nil
 }
 
-func (a *NodeWorxAPI) DefaultRequestParams() (NodeWorxReqParams, error) {
+func (a *NodeWorxAPI) Call(
+	controller string,
+	action string,
+	input interface{},
+	output interface{},
+) error {
+
 	if len(a.defaultReqParams.Auth) == 0 {
-		return NodeWorxReqParams{}, errors.New("API not authenticated")
+		return errors.New("API not authenticated")
 	}
-	return a.defaultReqParams, nil
+
+	params := a.defaultReqParams
+	params.Controller = controller
+	params.Action = action
+	params.Input = input
+
+	var outputObject = struct {
+		Status      int         `xml:"status"`
+		RespPayload interface{} `xml:"payload"`
+	}{
+		RespPayload: output,
+	}
+
+	err := a.client.Call(NodeWorxAPIRoute, params, outputObject)
+	return err
 }
 
 func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
@@ -70,17 +89,17 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
 	a.defaultReqParams.Auth = map[string]string{
 		"sessionid": session,
 	}
+	version, err := a.NodeWorxVersion()
+	fmt.Printf("nodeworx is version %s\n", version)
+	return err
+}
 
-	params, _ := a.DefaultRequestParams()
-	var resp interface{}
-
-	err := a.client.Call(NodeWorxAPIRoute, params, &resp)
-	if err != nil {
-		return err
-	}
-	spew.Dump(resp)
-
-	return nil
+func (a *NodeWorxAPI) NodeWorxVersion() (string, error) {
+	output := struct {
+		Version string `xml:"version"`
+	}{}
+	err := a.Call("nodeworx.overview", "listVersion", map[string]string{}, output)
+	return output.Version, err
 }
 
 func (a *NodeWorxAPI) AuthViaInsecureSSHKeyfile(
@@ -107,9 +126,8 @@ func (a *NodeWorxAPI) AuthViaInsecureSSHKeyfile(
 	if err != nil {
 		return err
 	}
-	a.session = strings.TrimSpace(string(output))
 
-	a.NodeWorxSessionAuthenticate(a.session)
+	a.NodeWorxSessionAuthenticate(strings.TrimSpace(string(output)))
 	return nil
 }
 
