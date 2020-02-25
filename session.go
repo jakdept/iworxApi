@@ -89,9 +89,6 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string) error {
 	a.defaultReqParams.Auth = map[string]string{
 		"sessionid": session,
 	}
-	version, err := a.NodeWorxVersion()
-	fmt.Printf("nodeworx is version %s\n", version)
-	return err
 }
 
 func (a *NodeWorxAPI) NodeWorxVersion() (string, error) {

@@ -18,14 +18,20 @@ func main() {
 
 	api, err := iworx.NewNodeWorxAPI(*host)
 	if err != nil {
-		log.Fatalln(fmt.Errorf("problem creating API: %s", err))
+		log.Fatalf("problem creating API: %s\n", err)
 	}
 
 	log.Println("authenticating")
 	err = api.AuthViaInsecureSSHKeyfile(*host, *username, *keyfile, *port)
 	if err != nil {
-		log.Fatalln(fmt.Errorf("problem authenticating: %s", err))
+		log.Fatalf("problem authenticating: %s\n", err)
 	}
+
+	version, err := api.NodeWorxVersion()
+	if err != nil {
+		log.Fatalf("problem getting iworx version: %v", err)
+	}
+	fmt.Printf("nodeworx is version %s\n", version)
 
 	log.Println("i'm here")
 
