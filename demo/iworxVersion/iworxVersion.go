@@ -21,7 +21,12 @@ func main() {
 		log.Fatalf("problem creating API: %s\n", err)
 	}
 
-	err = api.AuthViaInsecureSSHKeyfile(*host, *username, *keyfile, *port)
+	sshConfig, err := iworx.InsecureSSHKeyfileConfig(*username, *keyfile)
+	if err != nil {
+		log.Fatalf("problem with ssh client config: %s\n", err)
+	}
+
+	err = api.SSHSessionAuthenticate(*host, *port, sshConfig)
 	if err != nil {
 		log.Fatalf("problem authenticating: %s\n", err)
 	}
@@ -32,12 +37,4 @@ func main() {
 	}
 	fmt.Printf("nodeworx is version %s\n", version)
 
-	// accounts, err := api.ListAccounts()
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// fmt.Println("All accounts on server:")
-	// for _, each := range accounts {
-	// 	fmt.Println(each)
-	// }
 }
