@@ -4,23 +4,14 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 
 	"github.com/kolo/xmlrpc"
 )
 
 type NodeWorxAPI struct {
-	defaultReqParams NodeWorxReqParams
-	client           *xmlrpc.Client
-	auth             map[string]string `xmlrpc:"apikey"`
-}
-
-type NodeWorxReqParams struct {
-	Auth       map[string]string `xmlrpc:"apikey"`
-	Controller string            `xmlrpc:"ctrl_name"`
-	Action     string            `xmlrpc:"action"`
-	Input      interface{}       `xmlrpc:"input"`
+	client *xmlrpc.Client
+	auth   map[string]string `xmlrpc:"apikey"`
 }
 
 // auth object may be:
