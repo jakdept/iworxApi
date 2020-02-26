@@ -8,20 +8,31 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string, domain string) {
-	// $key = array( 'sessionid' => '3c8ae9d982edd507428d8fdd53855a77' );
-	// $input = array();
-	// $params = array( 'apikey'    => $key,
-	//                  'ctrl_name' => $api_controller,
-	//                  'action'    => $action,
-	//                  'input'     => $input );
-	// // You can connect using XMLRPC, like this:
-	// // NOTE: This example makes use of the Zend Framework's XMLRPC library.
-	// $client = new Zend_XmlRpc_Client( 'https://license-api.interworx.com:2443/xmlrpc' );
-	// $result = $client->call( 'iworx.route', $params );
-
+func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session, domain string) {
+	// set up the required object for session based authentication
 	a.auth = map[string]string{
 		"sessionid": session,
+	}
+	if domain != "" {
+		a.auth["domain"] = domain
+	}
+}
+
+func (a *NodeWorxAPI) APIKeyAuthenticate(key, domain string) {
+	// set up the required object for apikey based authentication
+	a.auth = map[string]string{
+		"apikey": strings.TrimSpace(key),
+	}
+	if domain != "" {
+		a.auth["domain"] = domain
+	}
+}
+
+func (a *NodeWorxAPI) UserAuthenticate(username, password, domain string) {
+	// set up the required object for user based authentication
+	a.auth = map[string]string{
+		"email":    username,
+		"password": password,
 	}
 	if domain != "" {
 		a.auth["domain"] = domain
