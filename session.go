@@ -16,6 +16,7 @@ import (
 type NodeWorxAPI struct {
 	defaultReqParams NodeWorxReqParams
 	client           *xmlrpc.Client
+	auth             map[string]string `xmlrpc:"apikey"`
 }
 
 type NodeWorxReqParams struct {
@@ -54,7 +55,7 @@ func (a *NodeWorxAPI) Call(
 	output interface{},
 ) error {
 
-	if len(a.defaultReqParams.Auth) == 0 {
+	if len(a.auth) == 0 {
 		return errors.New("API not authenticated")
 	}
 
@@ -70,10 +71,12 @@ func (a *NodeWorxAPI) Call(
 		RespPayload: output,
 	}
 
-	reqBody, _ := xmlrpc.EncodeMethodCall(NodeWorxAPIRoute, params)
+	reqBody, _ := xmlrpc.EncodeMethodCall(NodeWorxAPIRoute, a.auth, controller, action, input)
 	fmt.Println(string(reqBody))
 
-	err := a.client.Call(NodeWorxAPIRoute, params, outputObject)
+	err := a.client.Call(NodeWorxAPIRoute, []interface{}{
+		a.auth, controller, action, input,
+	}, outputObject)
 	return err
 }
 
@@ -89,11 +92,11 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string, domain string)
 	// $client = new Zend_XmlRpc_Client( 'https://license-api.interworx.com:2443/xmlrpc' );
 	// $result = $client->call( 'iworx.route', $params );
 
-	a.defaultReqParams.Auth = map[string]string{
+	a.auth = map[string]string{
 		"sessionid": session,
 	}
 	if domain != "" {
-		a.defaultReqParams.Auth["domain"] = domain
+		a.auth["domain"] = domain
 	}
 }
 
@@ -102,7 +105,7 @@ func (a *NodeWorxAPI) NodeWorxVersion() (string, error) {
 		Version string `xmlrpc:"version"`
 	}{}
 
-	err := a.Call("nodeworx.overview", "listVersion", nil, output)
+	err := a.Call("/nodeworx/overview", "listVersion", map[string]string{}, &output)
 	return output.Version, err
 }
 
