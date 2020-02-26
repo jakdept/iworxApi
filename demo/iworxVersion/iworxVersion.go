@@ -21,7 +21,6 @@ func main() {
 		log.Fatalf("problem creating API: %s\n", err)
 	}
 
-	log.Println("authenticating")
 	err = api.AuthViaInsecureSSHKeyfile(*host, *username, *keyfile, *port)
 	if err != nil {
 		log.Fatalf("problem authenticating: %s\n", err)
@@ -32,8 +31,6 @@ func main() {
 		log.Fatalf("problem getting iworx version: %v", err)
 	}
 	fmt.Printf("nodeworx is version %s\n", version)
-
-	log.Println("i'm here")
 
 	// accounts, err := api.ListAccounts()
 	// if err != nil {

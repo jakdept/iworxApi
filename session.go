@@ -59,24 +59,9 @@ func (a *NodeWorxAPI) Call(
 		return errors.New("API not authenticated")
 	}
 
-	params := a.defaultReqParams
-	params.Controller = controller
-	params.Action = action
-	params.Input = input
-
-	var outputObject = struct {
-		Status      int         `xmlrpc:"status"`
-		RespPayload interface{} `xmlrpc:"payload"`
-	}{
-		RespPayload: output,
-	}
-
-	reqBody, _ := xmlrpc.EncodeMethodCall(NodeWorxAPIRoute, a.auth, controller, action, input)
-	fmt.Println(string(reqBody))
-
 	err := a.client.Call(NodeWorxAPIRoute, []interface{}{
 		a.auth, controller, action, input,
-	}, outputObject)
+	}, output)
 	return err
 }
 
@@ -102,11 +87,14 @@ func (a *NodeWorxAPI) NodeWorxSessionAuthenticate(session string, domain string)
 
 func (a *NodeWorxAPI) NodeWorxVersion() (string, error) {
 	output := struct {
-		Version string `xmlrpc:"version"`
+		Status      int `xmlrpc:"status"`
+		RespPayload struct {
+			Version string `xmlrpc:"version"`
+		} `xmlrpc:"payload"`
 	}{}
 
 	err := a.Call("/nodeworx/overview", "listVersion", map[string]string{}, &output)
-	return output.Version, err
+	return output.RespPayload.Version, err
 }
 
 func (a *NodeWorxAPI) AuthViaInsecureSSHKeyfile(
