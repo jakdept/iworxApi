@@ -70,7 +70,8 @@ func (a *NodeWorxAPI) SSHSessionAuthenticate(
 func (a *NodeWorxAPI) LocalSessionAuthenticate() error {
 	// nodeworx -nu --controller Index --action getSession
 	cmd := exec.Command(
-		"/usr/bin/nodeworx",
+		"/usr/bin/env",
+		"nodeworx",
 		"-nu",
 		"--controller",
 		"Index",
